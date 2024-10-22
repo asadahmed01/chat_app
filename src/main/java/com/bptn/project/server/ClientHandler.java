@@ -22,26 +22,27 @@ public class ClientHandler implements Runnable {
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.userName = bufferedReader.readLine();
+            clientHandlers.add(this);
+            broadcastMessage("SERVER: " + userName + "has entered the chat");
         } catch (IOException e) {
-            closeSocket();
+            closeSocket(socket, bufferedReader, bufferedWriter);
         }
         
     }
 
     @Override
     public void run() {
-        try {
-            
-            String message;
-            while(socket.isConnected()){
+        String message;
+        while(socket.isConnected()){
+            try{
                 message = bufferedReader.readLine();
-                //broadcast the message to all connected clients
                 broadcastMessage(message);
+
+            } catch (IOException e) {
+                closeSocket(socket, bufferedReader, bufferedWriter);
+                break;
             }
-        } catch (IOException e) {
-            closeSocket();
         }
-        
     }
 
 
@@ -54,7 +55,7 @@ public class ClientHandler implements Runnable {
                     clientHandler.bufferedWriter.flush();
                 }
             } catch (IOException e) {
-                closeSocket();
+                closeSocket(socket, bufferedReader, bufferedWriter);
             }
         }
     }
@@ -64,7 +65,22 @@ public class ClientHandler implements Runnable {
         broadcastMessage("Server: " + userName + " has left the chat");
     }
 
-    public void closeSocket(){
+    public String showOnlineUser(){
+        StringBuilder onlineUsers = new StringBuilder("[");
+
+        for (ClientHandler clientHandler : clientHandlers) {
+            onlineUsers.append(userName).append(", ");
+        }
+
+        if (onlineUsers.length() > 1) {
+            onlineUsers.setLength(onlineUsers.length() - 2);  // Remove the last comma and space
+        }
+
+        onlineUsers.append("]");  // Close the list with a closing bracket
+        return onlineUsers.toString();
+    }
+
+    public void closeSocket(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter){
         removeUserFromChat();
         try {
             if(socket != null){
