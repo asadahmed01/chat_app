@@ -38,6 +38,7 @@ public class Client {
             Scanner scanner = new Scanner(System.in);
 
             while(socket.isConnected()){
+                System.out.println("Choose 1 to leave chat");
                 String message = scanner.nextLine();
                 bufferedWriter.write(userName +": " + message);
                 bufferedWriter.newLine();
@@ -101,11 +102,32 @@ public class Client {
         String username = scanner.nextLine();
         Socket socket = new Socket("localhost", 1234);
         Client client = new Client(username, socket);
+        System.out.println("\nMenu:");
+
         // Start listening for messages in a new thread
-        System.out.println("Online users [" + ClientHandler.clientHandlers.size() + "]");
         client.listenForMessage();
         // Start sending messages in the main thread
         client.sendMessage();
+
+//        while (true) {
+//            System.out.println("\nMenu:");
+//            System.out.println("1. See names of online users");
+//            System.out.println("2. Leave chat");
+//            System.out.print("Choose an option: ");
+//
+//            String choice = scanner.nextLine();
+//
+//            switch (choice) {
+//                case "1":
+//                    System.out.println("showing online users..");
+//                    break;
+//                case "2":
+//                    System.out.println("Leaving chat...");
+//                    return;  // Exit the loop, which will end the program
+//                default:
+//                    System.out.println("Invalid option. Please try again.");
+//            }
+//        }
 
     }
 }
