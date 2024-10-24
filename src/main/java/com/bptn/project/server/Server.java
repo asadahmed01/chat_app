@@ -6,6 +6,8 @@ import java.net.Socket;
 
 public class Server {
     private ServerSocket serverSocket;
+    private static final int PORT = 1234;
+
 
 
     public Server(ServerSocket serverSocket) {
@@ -19,6 +21,7 @@ public class Server {
             // keep listening for new connection
             System.out.println("Waiting for new connections....");
             while(!serverSocket.isClosed()){
+                System.out.println("Chat Server running on port " + PORT);
                 Socket socket = serverSocket.accept();
                 System.out.println("New user has connected.");
                 //instantiate new ClientHandler that will handle each client connection
@@ -30,6 +33,7 @@ public class Server {
             }
             
         } catch (IOException e) {
+            System.out.println("Server error: " + e.getMessage());
             closeServer();
         }
     }
@@ -41,8 +45,8 @@ public class Server {
             }
             
         } catch (IOException e) {
-            System.out.println("Something went wrong in the server.");
-            e.printStackTrace();
+            System.out.println("Error shutting down server: " + e.getMessage());
+
         }
 
     }
@@ -51,7 +55,7 @@ public class Server {
 
 
     public static void main(String[] args) throws IOException {
-        ServerSocket serverSocket = new ServerSocket(1234);
+        ServerSocket serverSocket = new ServerSocket(PORT);
         Server server = new Server(serverSocket);
         //start the server
         server.startServer();

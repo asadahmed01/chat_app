@@ -9,60 +9,124 @@ import java.net.Socket;
 import java.util.ArrayList;
 
 public class ClientHandler implements Runnable {
-    public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
+    public static final ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
     private Socket socket;
     private BufferedReader bufferedReader ;
     private BufferedWriter bufferedWriter;
     private String userName;
 
-    public ClientHandler(Socket socket){
+    public ClientHandler(Socket socket) {
+        this.socket = socket;
         try {
-            
-            this.socket = socket;
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            this.userName = bufferedReader.readLine();
-            clientHandlers.add(this);
-            broadcastMessage("SERVER: " + userName + " has entered the chat");
         } catch (IOException e) {
-            closeSocket(socket, bufferedReader, bufferedWriter);
+            closeEverything();
         }
-        
     }
 
     @Override
     public void run() {
-        String message;
-        while(socket.isConnected()){
-            try{
-                message = bufferedReader.readLine();
-                broadcastMessage(message);
+        try {
+            // Handle username registration
+            handleUsernameRegistration();
 
-            } catch (IOException e) {
-                closeSocket(socket, bufferedReader, bufferedWriter);
+            // Main message loop
+            String messageFromClient;
+            while (socket.isConnected() && (messageFromClient = bufferedReader.readLine()) != null) {
+                handleClientMessage(messageFromClient);
+            }
+        } catch (IOException e) {
+            closeEverything();
+        }
+    }
+
+
+    private void handleUsernameRegistration() throws IOException {
+        while (true) {
+            userName = bufferedReader.readLine();
+            if (userName == null || userName.trim().isEmpty()) {
+                sendMessage("ERROR: Username cannot be empty");
+                continue;
+            }
+
+            if (isUsernameUnique(userName)) {
+                sendMessage("SUCCESS: Username registered successfully");
+                clientHandlers.add(this);
+                broadcastMessage("SERVER: " + userName + " has joined the chat");
+                sendOnlineUsers();
                 break;
+            } else {
+                sendMessage("ERROR: Username already taken");
+            }
+        }
+    }
+
+    private void handleClientMessage(String message) {
+        if (message.startsWith("/")) {
+            handleCommand(message);
+        } else {
+            broadcastMessage(userName + ": " + message);
+        }
+    }
+
+
+    private void handleCommand(String command) {
+        switch (command.toLowerCase()) {
+            case "/users":
+                sendOnlineUsers();
+                break;
+            case "/help":
+                sendHelpMessage();
+                break;
+            case "/quit":
+                closeEverything();
+                break;
+            default:
+                sendMessage("Unknown command. Type /help for available commands");
+        }
+    }
+
+
+    private void sendHelpMessage() {
+        String helpMessage = "\nAvailable commands:\n" +
+                "/users - Show online users\n" +
+                "/help  - Show this help message\n" +
+                "/quit  - Exit the chat\n";
+        sendMessage(helpMessage);
+    }
+
+    private void broadcastMessage(String message) {
+        for (ClientHandler client : clientHandlers) {
+            if (!client.userName.equals(this.userName)) {
+                client.sendMessage(message);
             }
         }
     }
 
 
-    public void broadcastMessage(String message){
-        for(ClientHandler clientHandler: clientHandlers){
-            try {
-                if(!clientHandler.userName.equals(userName)){
-                    clientHandler.bufferedWriter.write(message);
-                    clientHandler.bufferedWriter.newLine();
-                    clientHandler.bufferedWriter.flush();
-                }
-            } catch (IOException e) {
-                closeSocket(socket, bufferedReader, bufferedWriter);
-            }
+    private void sendOnlineUsers() {
+        StringBuilder users = new StringBuilder("\nOnline Users:\n");
+        for (ClientHandler client : clientHandlers) {
+            users.append("- ").append(client.userName).append("\n");
+        }
+        sendMessage(users.toString());
+    }
+
+
+    private void sendMessage(String message) {
+        try {
+            bufferedWriter.write(message);
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+        } catch (IOException e) {
+            closeEverything();
         }
     }
 
-    public void removeUserFromChat(){
+    private void removeClientHandler() {
         clientHandlers.remove(this);
-        broadcastMessage("Server: " + userName + " has left the chat");
+        broadcastMessage("SERVER: " + userName + " has left the chat");
     }
 
     public String showOnlineUser(){
@@ -80,18 +144,17 @@ public class ClientHandler implements Runnable {
         return onlineUsers.toString();
     }
 
-    public void closeSocket(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter){
-        removeUserFromChat();
+
+    private static boolean isUsernameUnique(String username) {
+        return clientHandlers.stream().noneMatch(client -> client.userName.equals(username));
+    }
+
+    private void closeEverything() {
+        removeClientHandler();
         try {
-            if(socket != null){
-                socket.close();
-            }
-            if(bufferedReader != null){
-                bufferedReader.close();
-            }
-            if(bufferedWriter != null){
-                bufferedWriter.close();
-            }
+            if (bufferedReader != null) bufferedReader.close();
+            if (bufferedWriter != null) bufferedWriter.close();
+            if (socket != null) socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
