@@ -75,7 +75,6 @@ public class Client {
                 System.out.println(response);
             }
         }
-        scanner.close();
     }
 
 
@@ -101,7 +100,6 @@ public class Client {
                 break;
             }
         }
-        scanner.close();
     }
 
     private void sendMessage(String message) throws IOException {

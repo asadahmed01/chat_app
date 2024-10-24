@@ -107,10 +107,15 @@ public class ClientHandler implements Runnable {
 
 
     private void sendOnlineUsers() {
-        StringBuilder users = new StringBuilder("\nOnline Users:\n");
+        StringBuilder users = new StringBuilder("\nOnline Users: [");
         for (ClientHandler client : clientHandlers) {
-            users.append("- ").append(client.userName).append("\n");
+            users.append(client.userName).append(",");
         }
+        // Check if we added any users, then remove the last comma and space
+        if (users.length() > 14) { // Length is 14 for "Online Users: ["
+            users.setLength(users.length() - 2); // Remove last ", "
+        }
+        users.append("]");
         sendMessage(users.toString());
     }
 
