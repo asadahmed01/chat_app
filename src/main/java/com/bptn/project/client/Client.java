@@ -1,7 +1,5 @@
 package com.bptn.project.client;
 
-import com.bptn.project.server.ClientHandler;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -15,119 +13,148 @@ public class Client {
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
     private String userName;
+    private boolean isRunning = true;
 
 
-    public Client(String userName, Socket socket){
+    public Client(Socket socket) {
         try {
-            this.userName = userName;
             this.socket = socket;
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         } catch (IOException e) {
-            closeEverything(socket, bufferedReader, bufferedWriter);
+            closeEverything();
         }
     }
 
 
-    public void sendMessage(){
+    public void start() {
         try {
+            // Register username
+            registerUsername();
+
+            // Start message listener thread
+            new Thread(this::listenForMessages).start();
+
+            // Handle user input in main thread
+            handleUserInput();
+        } catch (IOException e) {
+            closeEverything();
+        }
+    }
+
+
+
+    private void registerUsername() throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        boolean isRegistered = false;
+
+        while (!isRegistered) {
+            System.out.print("\nEnter your username: ");
+            userName = scanner.nextLine().trim();
+
+            if (userName.isEmpty()) {
+                System.out.println("Username cannot be empty. Please try again.");
+                continue;
+            }
+
+            // Send username to server
             bufferedWriter.write(userName);
             bufferedWriter.newLine();
             bufferedWriter.flush();
-            
-            Scanner scanner = new Scanner(System.in);
 
-            while(socket.isConnected()){
-                System.out.println("Choose 1 to leave chat");
-                String message = scanner.nextLine();
-                bufferedWriter.write(userName +": " + message);
-                bufferedWriter.newLine();
-                bufferedWriter.flush();
-                System.out.println("(You): " + message);
+            // Get server response
+            String response = bufferedReader.readLine();
+            if (response.startsWith("SUCCESS")) {
+                isRegistered = true;
+                System.out.println("\nWelcome to the chat room, " + userName + "!");
+                showHelp();
+            } else {
+                System.out.println(response);
             }
-        } catch (IOException e) {
-            closeEverything(socket, bufferedReader, bufferedWriter);
         }
     }
 
-    public void listenForMessage() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String msgFromGroupChat;
 
-                while (socket.isConnected()) {
-                    try {
-                        msgFromGroupChat = bufferedReader.readLine();  // Read message from the server
-                        System.out.println(msgFromGroupChat);           // Display message on the console
-                    } catch (IOException e) {
-                        closeEverything(socket, bufferedReader, bufferedWriter);  // Handle exceptions
-                    }
+    private void handleUserInput() {
+        Scanner scanner = new Scanner(System.in);
+        while (isRunning && socket.isConnected()) {
+            try {
+                String message = scanner.nextLine();
+                if (message.equalsIgnoreCase("/quit")) {
+                    isRunning = false;
+                    System.out.println("Leaving chat...");
+                    bufferedWriter.write("/quit");
+                    bufferedWriter.newLine();
+                    bufferedWriter.flush();
+                    closeEverything();
+                    break;
                 }
+
+                sendMessage(message);
+                System.out.println("You: " + message);
+            } catch (IOException e) {
+                closeEverything();
+                break;
             }
-        }).start();
+        }
+    }
+
+    private void sendMessage(String message) throws IOException {
+        bufferedWriter.write(message);
+        bufferedWriter.newLine();
+        bufferedWriter.flush();
     }
 
 
+    private void listenForMessages() {
+        while (isRunning) {
+            try {
+                String message = bufferedReader.readLine();
+                if (message == null) break;
+                System.out.println(message);
+            } catch (IOException e) {
+                if (isRunning) {
+                    System.out.println("Lost connection to server.");
+                }
+                closeEverything();
+                break;
+            }
+        }
+    }
+
+    private void showHelp() {
+        System.out.println("\n=== Chat Room Commands ===");
+        System.out.println("/users - Show online users");
+        System.out.println("/help  - Show this help message");
+        System.out.println("/quit  - Exit the chat");
+        System.out.println("Start typing to send messages!");
+        System.out.println("========================\n");
+    }
 
 
-
-
-
-    public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
+    private void closeEverything() {
+        isRunning = false;
         try {
-            if (bufferedReader != null) {
-                bufferedReader.close();  // Close the reader if it is not null
-            }
-            if (bufferedWriter != null) {
-                bufferedWriter.close();  // Close the writer if it is not null
-            }
-            if (socket != null) {
-                socket.close();  // Close the socket if it is not null
-            }
+            if (bufferedReader != null) bufferedReader.close();
+            if (bufferedWriter != null) bufferedWriter.close();
+            if (socket != null) socket.close();
         } catch (IOException e) {
-            e.printStackTrace();  // Print the exception stack trace if an error occurs
+            e.printStackTrace();
         }
     }
     
 
 
+    public static void main(String[] args) {
+        try {
+            System.out.println("Connecting to chat server...");
+            Socket socket = new Socket("localhost", 1234);
+            System.out.println("Connected successfully!");
 
-
-
-    public static void main(String[] args) throws IOException {
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter your username for the group chat: ");
-
-        String username = scanner.nextLine();
-        Socket socket = new Socket("localhost", 1234);
-        Client client = new Client(username, socket);
-        System.out.println("\nMenu:");
-
-        // Start listening for messages in a new thread
-        client.listenForMessage();
-        // Start sending messages in the main thread
-        client.sendMessage();
-
-//        while (true) {
-//            System.out.println("\nMenu:");
-//            System.out.println("1. See names of online users");
-//            System.out.println("2. Leave chat");
-//            System.out.print("Choose an option: ");
-//
-//            String choice = scanner.nextLine();
-//
-//            switch (choice) {
-//                case "1":
-//                    System.out.println("showing online users..");
-//                    break;
-//                case "2":
-//                    System.out.println("Leaving chat...");
-//                    return;  // Exit the loop, which will end the program
-//                default:
-//                    System.out.println("Invalid option. Please try again.");
-//            }
-//        }
-
+            Client client = new Client(socket);
+            client.start();
+        }catch (IOException e) {
+            System.out.println("Error connecting to server: " + e.getMessage());
+        }
     }
 }
