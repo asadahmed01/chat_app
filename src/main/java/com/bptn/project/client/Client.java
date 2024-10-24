@@ -14,6 +14,8 @@ public class Client {
     private BufferedWriter bufferedWriter;
     private String userName;
     private boolean isRunning = true;
+    String RESET = "\u001B[0m";
+    String GREEN = "\u001B[32m";
 
 
     public Client(Socket socket) {
@@ -66,12 +68,14 @@ public class Client {
             String response = bufferedReader.readLine();
             if (response.startsWith("SUCCESS")) {
                 isRegistered = true;
-                System.out.println("\nWelcome to the chat room, " + userName + "!");
+                System.out.println(GREEN + "\nWelcome to the chat room, " + userName +  RESET);
+
                 showHelp();
             } else {
                 System.out.println(response);
             }
         }
+        scanner.close();
     }
 
 
@@ -97,6 +101,7 @@ public class Client {
                 break;
             }
         }
+        scanner.close();
     }
 
     private void sendMessage(String message) throws IOException {

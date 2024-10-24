@@ -5,8 +5,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
-    private ServerSocket serverSocket;
+    private final ServerSocket serverSocket;
     private static final int PORT = 1234;
+    String RESET = "\u001B[0m";
+    String GREEN = "\u001B[32m";
 
 
 
@@ -23,7 +25,8 @@ public class Server {
             while(!serverSocket.isClosed()){
                 System.out.println("Chat Server running on port " + PORT);
                 Socket socket = serverSocket.accept();
-                System.out.println("New user has connected.");
+                System.out.println(GREEN + "New user has connected." + RESET);
+
                 //instantiate new ClientHandler that will handle each client connection
                 ClientHandler clientHandler = new ClientHandler(socket);
 

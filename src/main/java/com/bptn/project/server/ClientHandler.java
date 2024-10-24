@@ -15,6 +15,7 @@ public class ClientHandler implements Runnable {
     private BufferedWriter bufferedWriter;
     private String userName;
 
+
     public ClientHandler(Socket socket) {
         this.socket = socket;
         try {
@@ -132,9 +133,7 @@ public class ClientHandler implements Runnable {
     public String showOnlineUser(){
         StringBuilder onlineUsers = new StringBuilder("[");
 
-        for (ClientHandler clientHandler : clientHandlers) {
-            onlineUsers.append(userName).append(", ");
-        }
+        onlineUsers.append(userName).append(", ");
 
         if (onlineUsers.length() > 1) {
             onlineUsers.setLength(onlineUsers.length() - 2);  // Remove the last comma and space
