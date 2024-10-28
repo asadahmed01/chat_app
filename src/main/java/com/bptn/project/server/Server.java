@@ -16,7 +16,7 @@ public class Server {
         this.serverSocket = serverSocket;
     }
 
-    //method that starts the server
+    //method that starts the server and readies it for llistening
 
     public void startServer(){
         try {
@@ -56,7 +56,7 @@ public class Server {
 
 
 
-
+//main entry point for the server
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = new ServerSocket(PORT);
         Server server = new Server(serverSocket);

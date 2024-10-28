@@ -31,7 +31,7 @@ public class Client {
 
     public void start() {
         try {
-            // Register username
+            // Register username first of all
             registerUsername();
 
             // Start message listener thread
@@ -40,6 +40,7 @@ public class Client {
             // Handle user input in main thread
             handleUserInput();
         } catch (IOException e) {
+            //if there is an error, close socket and buffer reader and writer
             closeEverything();
         }
     }
@@ -49,7 +50,7 @@ public class Client {
     private void registerUsername() throws IOException {
         Scanner scanner = new Scanner(System.in);
         boolean isRegistered = false;
-
+        //keep asking for valid username until unique one is registered
         while (!isRegistered) {
             System.out.print("\nEnter your username: ");
             userName = scanner.nextLine().trim();
@@ -59,19 +60,21 @@ public class Client {
                 continue;
             }
 
-            // Send username to server
+            // Send username to server for verification
             bufferedWriter.write(userName);
             bufferedWriter.newLine();
             bufferedWriter.flush();
 
             // Get server response
             String response = bufferedReader.readLine();
+            //if server responds with success, registeration is complete
             if (response.startsWith("SUCCESS")) {
                 isRegistered = true;
                 System.out.println(GREEN + "\nWelcome to the chat room, " + userName +  RESET);
 
-                showHelp();
+                showMenu();
             } else {
+                //display the error message from server
                 System.out.println(response);
             }
         }
@@ -83,6 +86,7 @@ public class Client {
         while (isRunning && socket.isConnected()) {
             try {
                 String message = scanner.nextLine();
+                //listen for the quit command
                 if (message.equalsIgnoreCase("/quit")) {
                     isRunning = false;
                     System.out.println("Leaving chat...");
@@ -96,6 +100,7 @@ public class Client {
                 sendMessage(message);
                 System.out.println("You: " + message);
             } catch (IOException e) {
+                //whene there is error, close socket and buffers and break out of the loop
                 closeEverything();
                 break;
             }
@@ -110,10 +115,13 @@ public class Client {
 
 
     private void listenForMessages() {
+        //while socket is running, keep listening for messages from other clients
         while (isRunning) {
             try {
                 String message = bufferedReader.readLine();
-                if (message == null) break;
+                if (message == null){
+                    break;
+                }
                 System.out.println(message);
             } catch (IOException e) {
                 if (isRunning) {
@@ -125,10 +133,11 @@ public class Client {
         }
     }
 
-    private void showHelp() {
+    private void showMenu() {
+        //display available commands to the user
         System.out.println("\n=== Chat Room Commands ===");
         System.out.println("/users - Show online users");
-        System.out.println("/help  - Show this help message");
+        System.out.println("/menu  - Show menu");
         System.out.println("/quit  - Exit the chat");
         System.out.println("Start typing to send messages!");
         System.out.println("========================\n");

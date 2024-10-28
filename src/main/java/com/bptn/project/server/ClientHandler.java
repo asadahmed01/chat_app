@@ -64,9 +64,11 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleClientMessage(String message) {
+        //check if client message starts with /
         if (message.startsWith("/")) {
             handleCommand(message);
         } else {
+            //if not command, broadcast message
             broadcastMessage(userName + ": " + message);
         }
     }
@@ -77,22 +79,22 @@ public class ClientHandler implements Runnable {
             case "/users":
                 sendOnlineUsers();
                 break;
-            case "/help":
-                sendHelpMessage();
+            case "/menu":
+                showMenu();
                 break;
             case "/quit":
                 closeEverything();
                 break;
             default:
-                sendMessage("Unknown command. Type /help for available commands");
+                sendMessage("Unknown command. Type /menu for available commands");
         }
     }
 
 
-    private void sendHelpMessage() {
+    private void showMenu() {
         String helpMessage = "\nAvailable commands:\n" +
                 "/users - Show online users\n" +
-                "/help  - Show this help message\n" +
+                "/menu  - Show menu \n" +
                 "/quit  - Exit the chat\n";
         sendMessage(helpMessage);
     }
@@ -113,7 +115,7 @@ public class ClientHandler implements Runnable {
         }
         // Check if we added any users, then remove the last comma and space
         if (users.length() > 14) { // Length is 14 for "Online Users: ["
-            users.setLength(users.length() - 2); // Remove last ", "
+            users.setLength(users.length() - 1); // Remove last ", "
         }
         users.append("]");
         sendMessage(users.toString());
@@ -141,7 +143,7 @@ public class ClientHandler implements Runnable {
         onlineUsers.append(userName).append(", ");
 
         if (onlineUsers.length() > 1) {
-            onlineUsers.setLength(onlineUsers.length() - 2);  // Remove the last comma and space
+            onlineUsers.setLength(onlineUsers.length() - 1);  // Remove the last comma and space
         }
 
         onlineUsers.append("]");  // Close the list with a closing bracket
